@@ -1,13 +1,15 @@
 from flask import jsonify, request
 from flask_api import status
 
-from . import app, channel, connection
+from . import app, isConnected
 from .mq_actions import *
 # setup rabbitmq connection
 
 @app.route('/', methods=['GET', 'POST'])
+@isConnected
 def connectionMethod():
     # POST request
+    from . import channel, connection
     if request.method == 'POST':
         response = switch_connection_status(connection)
     else:    
@@ -15,8 +17,10 @@ def connectionMethod():
     return jsonify({"response": response})
 
 @app.route('/queue', methods=['GET', 'POST'])
+@isConnected
 def queueAction():
     # POST request
+    from . import channel, connection
     if request.method == 'POST':
         try:
             qname = request.form['qname']
@@ -35,8 +39,10 @@ def queueAction():
         return jsonify({"error": str(e)})
 
 @app.route('/queue/<string:qname>', methods=['GET', 'DELETE'])
+@isConnected
 def queueManage(qname):
     # DELETE request
+    from . import channel, connection
     if request.method == 'DELETE':
         try:
             response = delete_queue(channel, qname)
@@ -54,7 +60,9 @@ def queueManage(qname):
         return jsonify({"error": str(e)})
 
 @app.route('/queue/<string:qname>/purge', methods=['POST'])
+@isConnected
 def queuePurge(qname):
+    from . import channel, connection
     try:
         response = purge_queue(channel, qname)
         return jsonify({"response": response})
@@ -63,7 +71,9 @@ def queuePurge(qname):
         return jsonify({"error": str(e)})
 
 @app.route('/queue/<string:qname>/message', methods=['POST'])
+@isConnected
 def messageAction(qname):
+    from . import channel, connection
     message = request.form['message']
     try:
         messageResponse = push_message(channel, qname, message)
@@ -74,7 +84,9 @@ def messageAction(qname):
         return jsonify({"error": str(e)})
 
 @app.route('/queue/<string:qname>/message/<int:mid>', methods=['GET', 'POST'])
+@isConnected
 def messageHandler(qname, mid):
+    from . import channel, connection
     try:
         res_status = status.HTTP_202_ACCEPTED
         if request.method == 'POST':
